@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
-
-//import 'package:syncfusion_flutter_sliders/sliders.dart';
+import 'package:dart_ipify/dart_ipify.dart';
+import 'package:blinking_text/blinking_text.dart';
 import 'package:potophe/briceclass.dart';
 
 void main() {
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'PH041901 '),
+      home: const MyHomePage(title: 'PH042202 '),
     );
   }
 }
@@ -37,34 +37,37 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   DateTime currentDate = DateTime.now();
-  var finalDate = "2021-6-6";
+  var finalDate = "2021-6-6"; // Va me servir pour les  controles d'acces
+  String dateKey = "2025-08-21";
 
   TextEditingController titreController = TextEditingController();
   TextEditingController legendeController = TextEditingController();
 
   String mafoto = "assets/marin.jpeg";
+  String potoName = "Blero";
   double thiswidth = 250;
   double thisheight = 250;
+  int okGame = 0; //  pas connu
 
-  String debug = "";
-  String dateSelected = "2022-4-4";
-  String dateSelectedPrev = "2022-4-4";
-  String dateKey = "2025-08-21";
-  var secureHistory = 0;
+  bool _isVisible = false;
+
   String labelTitre = "";
   String labelLegende = "";
-  List<Cartonton> listObjets = [];
-  List<Legendes> listLegendes = [];
-  int nbTotalObjets = 0;
-  List<int> mesCartons = [];
+  List<Fototon> listObjets = [];
+  List<Fototon> listObjetsCarton = [];
 
+  List<Photoupload> listUpload = [];
+  List<Photoupload> listPhotoUpload = [];
+  List<Legendes> listLegendes = [];
+  List<Potos> listPotos = [];
+
+  List<int> mesCartons = [];
   int quelCarton = 54;
   int ordreCarton = 0;
   int okSave = 0; // activer si + ou +
-//
-  List<Cartonton> listObjetsCarton = []; // reduce
   int counterObjets = 0;
   int objetsInCarton = 1;
+  String ipv4name = "xx.xx.xx.xx";
 
   final ButtonStyle flatButtonStyle = TextButton.styleFrom(
     primary: Colors.black87,
@@ -77,6 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Future<void> _selectDate(BuildContext context) async {
+    //getPotos();
     final DateTime? pickedDate = await showDatePicker(
         context: context,
         initialDate: currentDate,
@@ -86,17 +90,35 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         currentDate = pickedDate;
         finalDate = pickedDate.toString().substring(0, 10);
+        getPotoname();
       });
     }
+  }
+
+  void getPotoname() {
+    potoName = "Inconnu";
+    okGame = 0;
+    for (Potos _thisObjet in listPotos) {
+      if (_thisObjet.potopwd == finalDate) {
+        setState(() {
+          potoName = _thisObjet.potoname;
+          okGame = 1;
+          _isVisible = true;
+          updatePotos();
+        });
+      }
+    }
+
+    setState(() {});
   }
 
   //+++++++++++++++++++++
   void selectUnCarton() {
     // C'est le carton Actif --> quelCarton
-    listObjetsCarton.clear();
 
+    listObjetsCarton.clear();
     okSave = 0;
-    for (Cartonton _thisObjet in listObjets) {
+    for (Fototon _thisObjet in listObjets) {
       if (_thisObjet.fotocat == quelCarton) {
         listObjetsCarton.add(_thisObjet);
       }
@@ -122,9 +144,9 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-//*****
   //**************************************************
   Expanded getListViewReduce() {
+    if (okGame == 0) return Expanded(child: Text('VISITEUR'));
     var listView = ListView.builder(
         itemCount: listLegendes.length,
         itemBuilder: (context, index) {
@@ -180,7 +202,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   //***********
   void updateData() async {
-    Uri url = Uri.parse("https://www.paulbrode.com/dbutile.php");
+    // Mettre à Jour 2  Champs
+
+    Uri url = Uri.parse("https://www.paulbrode.com/php/dbutile.php");
     var id = listObjetsCarton[counterObjets].fotoindex.toString();
     var titre = listObjetsCarton[counterObjets].fototitre;
     var legende = listObjetsCarton[counterObjets].fotolegende;
@@ -189,9 +213,28 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   //***********
+  void updatePotos() async {
+    // Mettre à Jour 2  Champs
+    //dbUpdatePotos.php
+    //DateTime.now().toString()
+    String lastDate = DateTime.now().toString().substring(0, 19);
+
+    Uri url = Uri.parse("https://www.paulbrode.com/php/dbUpdatePotos.php");
+    var data = {
+      "POTONAME": potoName,
+      "POTOSTATUS": "1",
+      "POTOLAST": lastDate,
+      "IPV4": ipv4name
+    };
+
+    var res = await http.post(url, body: data);
+  }
+
+  //***********
   void createLegende() async {
+    // Mise à JOur d'une License
     //$sql = "INSERT INTO LEGENDES  (FOTOINDEX, POTONAME,GAMENAME, LEGENDE)
-    Uri url = Uri.parse("https://www.paulbrode.com/dblegendecreate.php");
+    Uri url = Uri.parse("https://www.paulbrode.com/php/dblegendecreate.php");
     var id = listObjetsCarton[counterObjets].fotoindex.toString();
     var legende = listObjetsCarton[counterObjets].fotolegende;
     var cegame = "gameboy";
@@ -207,15 +250,34 @@ class _MyHomePageState extends State<MyHomePage> {
 
   //+++++++++++++++++++++
   Future getDataFototek() async {
-    Uri url = Uri.parse("https://www.paulbrode.com/dbfototek.php");
-    var data = {"dadate": dateSelected};
+    Uri url = Uri.parse("https://www.paulbrode.com/php/dbfototek.php");
+    //var data = {"dadate": dateSelected};
     http.Response response = await http.get(url);
     if (response.statusCode == 200) {
       var datamysql = jsonDecode(response.body) as List;
       setState(() {
         okSave = 0;
-        listObjets =
-            datamysql.map((xJson) => Cartonton.fromJson(xJson)).toList();
+        listObjets = datamysql.map((xJson) => Fototon.fromJson(xJson)).toList();
+        _getListCarton();
+        ordreCarton = 0;
+        quelCarton = 54; //New
+        selectUnCarton();
+      });
+    } else {}
+  }
+
+  //+++++++++++++++++++++
+  Future getDataUpload() async {
+    // Lire les Images  Uploadés par les  Users
+    Uri url = Uri.parse("https://www.paulbrode.com/php/dbfototek.php");
+
+    http.Response response = await http.get(url);
+    if (response.statusCode == 200) {
+      var datamysql = jsonDecode(response.body) as List;
+      setState(() {
+        okSave = 0;
+        listUpload =
+            datamysql.map((xJson) => Photoupload.fromJson(xJson)).toList();
         _getListCarton();
         ordreCarton = 0;
         quelCarton = 54; //New
@@ -226,8 +288,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 //+++++++++++++++++++++
   Future getDataLegendes() async {
-    Uri url = Uri.parse("https://www.paulbrode.com/dblegendes.php");
-
+    Uri url = Uri.parse("https://www.paulbrode.com/php/dblegendes.php");
     http.Response response = await http.get(url);
     if (response.statusCode == 200) {
       var datamysql = jsonDecode(response.body) as List;
@@ -243,7 +304,31 @@ class _MyHomePageState extends State<MyHomePage> {
     } else {}
   }
 
-  //+++++++++++++++++++++
+  Future getIP() async {
+    final ipv4 = await Ipify.ipv4();
+
+    final ipv6 = await Ipify.ipv64();
+
+    final ipv4json = await Ipify.ipv64(format: Format.JSON);
+
+    ipv4name = ipv4;
+    // The response type can be text, json or jsonp
+  }
+
+//+++++++++++++++++++++
+  Future getPotos() async {
+    Uri url = Uri.parse("https://www.paulbrode.com/php/dbpotorid.php");
+    http.Response response = await http.get(url);
+    if (response.statusCode == 200) {
+      var datamysql = jsonDecode(response.body) as List;
+      setState(() {
+        okSave = 0;
+        listPotos = datamysql.map((xJson) => Potos.fromJson(xJson)).toList();
+      });
+    } else {}
+  }
+
+//+++++++++++++++++++++
   void _incrementCounter() {
     setState(() {
       okSave = 0;
@@ -290,10 +375,10 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  //+++++++++++++++++++++
+//++++++++++++++++++++++++
   void _getListCarton() {
     mesCartons.clear();
-    for (Cartonton _thisObjet in listObjets) {
+    for (Fototon _thisObjet in listObjets) {
       int thisCarton = _thisObjet.fotocat;
       int inside = 0;
 
@@ -305,13 +390,16 @@ class _MyHomePageState extends State<MyHomePage> {
     mesCartons.sort();
   }
 
-  //+++++++++++++++++++++
+//+++++++++++++++++++++
   @override
   void initState() {
     super.initState();
     titreController = TextEditingController();
-    getDataFototek();
+    getDataFototek(); //Rep1
+    getDataUpload(); // Rep2
     getDataLegendes();
+    getPotos(); // User
+    getIP();
   }
 
   //+++++++++++++++++++++
@@ -337,16 +425,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       height: thisheight,
                     ),
                   ],
-                ),
-                Text(
-                  finalDate.toString(),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      backgroundColor: Colors.white,
-                      color: Colors.black),
                 ),
                 Slider(
                   label: 'Hauteur',
@@ -394,7 +472,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       setState(() {
                         labelTitre = titreController.text;
                         listObjetsCarton[counterObjets].fototitre = labelTitre;
-
                       });
                     },
                   ),
@@ -418,7 +495,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
                 ),
-                 getListViewReduce(),
+                getListViewReduce(),
               ],
             ),
           ),
@@ -432,8 +509,11 @@ class _MyHomePageState extends State<MyHomePage> {
             FloatingActionButton(
               heroTag: 'decrement',
               onPressed: _decrementCounter,
-              tooltip: dateSelected,
-              child: const Icon(Icons.arrow_back),
+              tooltip: 'dateSelected',
+              child: const Icon(
+                Icons.arrow_back,
+                size: 20,
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
@@ -454,18 +534,18 @@ class _MyHomePageState extends State<MyHomePage> {
               heroTag: 'increment',
               onPressed: _incrementCounter,
               tooltip: 'Increment',
-              child: const Icon(Icons.arrow_forward),
+              child: const Icon(Icons.arrow_forward, size: 20),
             ),
             IconButton(
               icon: const Icon(Icons.save_sharp),
-              iconSize: 40,
+              iconSize: 25,
               color: Colors.deepPurple,
               tooltip: 'save',
               onPressed: () => updateData(),
             ),
             IconButton(
               icon: const Icon(Icons.sanitizer_rounded),
-              iconSize: 40,
+              iconSize: 25,
               color: Colors.deepPurple,
               tooltip: 'save',
               onPressed: () => createLegende(),
@@ -473,14 +553,36 @@ class _MyHomePageState extends State<MyHomePage> {
             //***
             IconButton(
               icon: const Icon(Icons.calendar_today),
-              iconSize: 50,
-              color: Colors.redAccent,
-              tooltip: 'save',
+              iconSize: 25,
+              color: Colors.blue,
+              tooltip: 'Date du Game',
               onPressed: () => _selectDate(context),
             ),
-
-
-      //finaldate = order.toString().substring(0, 10);
+            /* Visibility(
+              visible: _isVisible,
+              child:  Text(
+                potoName,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    backgroundColor: Colors.red,
+                    color: Colors.black),
+              ),
+            ),*/
+            Visibility(
+              visible: _isVisible,
+              child: BlinkText(
+                potoName,
+                style: TextStyle(
+                    fontSize: 20.0,
+                    color: Colors.blue,
+                    backgroundColor: Colors.red),
+                endColor: Colors.orange,
+              ),
+            ),
+            //finaldate = order.toString().substring(0, 10);
 
             ///****
           ]),
