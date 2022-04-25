@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'PH042202 '),
+      home: const MyHomePage(title: 'PH0423 '),
     );
   }
 }
@@ -39,7 +39,6 @@ class _MyHomePageState extends State<MyHomePage> {
   DateTime currentDate = DateTime.now();
   var finalDate = "2021-6-6"; // Va me servir pour les  controles d'acces
   String dateKey = "2025-08-21";
-
   TextEditingController titreController = TextEditingController();
   TextEditingController legendeController = TextEditingController();
 
@@ -47,28 +46,27 @@ class _MyHomePageState extends State<MyHomePage> {
   String potoName = "Blero";
   double thiswidth = 250;
   double thisheight = 250;
-  int okGame = 0; //  pas connu
 
-  bool _isVisible = false;
+  bool okGame = false; //  User Non déclaré
+  bool _isVisible = false; //
 
   String labelTitre = "";
   String labelLegende = "";
-  List<Fototon> listObjets = [];
-  List<Fototon> listObjetsCarton = [];
-
   List<Photoupload> listUpload = [];
   List<Photoupload> listPhotoUpload = [];
   List<Legendes> listLegendes = [];
+  List<Legendes> listLegendesFoto = [];
   List<Potos> listPotos = [];
+  List<Votes> listVotes = [];
 
-  List<int> mesCartons = [];
-  int quelCarton = 54;
-  int ordreCarton = 0;
-  int okSave = 0; // activer si + ou +
-  int counterObjets = 0;
-  int objetsInCarton = 1;
+  int okSave = 0; //
+  String filouname = "";
+  String filoutype = "";
+  int fotoSelected = 0;
+  int counterFotos = 1;
   String ipv4name = "xx.xx.xx.xx";
-
+  int note = 0;
+  int potoId = 0;
   final ButtonStyle flatButtonStyle = TextButton.styleFrom(
     primary: Colors.black87,
     minimumSize: Size(50, 50),
@@ -96,13 +94,15 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void getPotoname() {
-    potoName = "Inconnu";
-    okGame = 0;
+    potoName = "Boloss";
+    okGame = false;
+    _isVisible = false;
     for (Potos _thisObjet in listPotos) {
       if (_thisObjet.potopwd == finalDate) {
         setState(() {
           potoName = _thisObjet.potoname;
-          okGame = 1;
+          potoId = _thisObjet.potoid;
+          okGame = true;
           _isVisible = true;
           updatePotos();
         });
@@ -112,104 +112,100 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {});
   }
 
-  //+++++++++++++++++++++
-  void selectUnCarton() {
-    // C'est le carton Actif --> quelCarton
+  void selectLegendesFoto() {
+    //  CreerUne Liste des  Legendes  concernat une Photo
 
-    listObjetsCarton.clear();
+    if (!okGame) return; // Pas connu
+    bool _found = false;
+    listLegendesFoto.clear();
+
+    for (Legendes _thisObjet in listLegendes) {
+      if ((_thisObjet.fotofilename == filouname) &&
+          (_thisObjet.fotofilename == filouname)) {
+        listLegendesFoto.add(_thisObjet);
+      }
+    }
+
+    //  Maintenat on Va verifier si il existe des  votes de du poto actif
+    //  sur ces légendes
+    // Je vais les rlire
+    for (Legendes _thisLegende in listLegendesFoto) {
+      int thisindex = _thisLegende.legendeid;
+      //potoname actif
+      // On va balayer les Votes
+      _found = false;
+      for (Votes _thisVote in listVotes) {
+        _found = false;
+        if ((_thisVote.legendeid == thisindex) &&
+            (_thisVote.potoname == potoName)) {
+          // Mettre  à Jour il existe
+          _thisLegende.internalVote = _thisVote.votepoints;
+          _found = true;
+          // createVote(_thisVote.legendeid, potoName, 0, ipv4name);
+        } else {
+          //Il faut le creer avant de le Mettre à Jour
+
+        }
+      }
+
+      if (!_found) {
+        createVote(thisindex, potoName, 0, ipv4name);
+      }
+    }
+  }
+
+  void selectUnSet() {
+    //listUpload contient tout
+
+    // On prend une partie mais laqueelle ? A définit
+    listPhotoUpload.clear();
     okSave = 0;
-    for (Fototon _thisObjet in listObjets) {
-      if (_thisObjet.fotocat == quelCarton) {
-        listObjetsCarton.add(_thisObjet);
+    for (Photoupload _thisObjet in listUpload) {
+      if (_thisObjet.fotoproprio == "INCONNU") {
+        listPhotoUpload.add(_thisObjet);
       }
     }
 
     setState(() {
-      listObjetsCarton.sort((a, b) => a.fotoindex.compareTo(b.fotoindex));
-      objetsInCarton = listObjetsCarton.length;
-      counterObjets = 0;
-      labelTitre = listObjetsCarton[counterObjets].fototitre;
-      titreController.text = labelTitre;
-
-      labelLegende = listObjetsCarton[counterObjets].fotolegende;
-      legendeController.text = labelLegende;
-
-      String fotocon = (counterObjets + 1).toString();
-
-      if (counterObjets < 10) fotocon = 'red00' + fotocon;
-      if (counterObjets > 99) fotocon = 'red' + fotocon;
-      if ((counterObjets > 9) && (counterObjets < 100))
-        fotocon = 'red0' + fotocon;
-      mafoto = 'potophe/' + quelCarton.toString() + '/' + fotocon + '.png';
+      fotoSelected = listPhotoUpload.length;
+      counterFotos = 1;
+      majFotoActive();
     });
   }
 
   //**************************************************
   Expanded getListViewReduce() {
-    if (okGame == 0) return Expanded(child: Text('VISITEUR'));
+    //listLegendesFoto
+    if (!okGame) return Expanded(child: Text('Boloss'));
     var listView = ListView.builder(
-        itemCount: listLegendes.length,
+        itemCount: listLegendesFoto.length,
         itemBuilder: (context, index) {
           return ListTile(
-            //leading: Icon(Icons.favorite),
-            title: Text(
-              listLegendes[index].gamename +
-                  " " +
-                  listLegendes[index].potoname +
-                  " " +
-                  listLegendes[index].fotoindex.toString(),
-              style: TextStyle(
-                  fontSize: 13, fontFamily: 'Serif', color: Colors.green),
-            ),
-            subtitle: Text(
-              "à " + listLegendes[index].legende,
-              style: TextStyle(
-                  fontSize: 13, fontFamily: 'Serif', color: Colors.black),
-            ),
-            dense: true,
-            onTap: () {},
-          );
+              //leading: Icon(Icons.favorite),
+              title: Text(
+                listLegendesFoto[index].potoname +
+                    "-->" +
+                    listLegendesFoto[index].internalVote.toString() +
+                    " :" +
+                    listLegendesFoto[index].legende,
+                style: TextStyle(
+                    fontSize: 13, fontFamily: 'Serif', color: Colors.green),
+              ),
+              dense: true,
+              onTap: () {
+                setState(() {
+                  // On connait Index de la Legendre
+                  // Ou Storcker Les Notes
+
+                  listLegendesFoto[index].internalVote++;
+                  if (listLegendesFoto[index].internalVote > 10) {
+                    listLegendesFoto[index].internalVote = 0;
+                  }
+                });
+              });
         });
 
-    return Expanded(child: listView);
-  }
-
-  //+++++++++++++++++++++
-  void _cartonApres() {
-    setState(() {
-      ordreCarton++;
-      okSave = 0;
-      if (ordreCarton >= mesCartons.length) {
-        ordreCarton = 0;
-      }
-      quelCarton = mesCartons[ordreCarton];
-      selectUnCarton();
-    });
-  }
-
-  //+++++++++++++++++++++
-  void _cartonAvant() {
-    setState(() {
-      okSave = 0;
-      ordreCarton--;
-      if (ordreCarton < 0) {
-        ordreCarton = 0;
-      }
-      quelCarton = mesCartons[ordreCarton];
-      selectUnCarton();
-    });
-  }
-
-  //***********
-  void updateData() async {
-    // Mettre à Jour 2  Champs
-
-    Uri url = Uri.parse("https://www.paulbrode.com/php/dbutile.php");
-    var id = listObjetsCarton[counterObjets].fotoindex.toString();
-    var titre = listObjetsCarton[counterObjets].fototitre;
-    var legende = listObjetsCarton[counterObjets].fotolegende;
-    var data = {"FOTOINDEX": id, "FOTOTITRE": titre, "FOTOLEGENDE": legende};
-    var res = await http.post(url, body: data);
+    return (Expanded(child: listView));
   }
 
   //***********
@@ -218,7 +214,6 @@ class _MyHomePageState extends State<MyHomePage> {
     //dbUpdatePotos.php
     //DateTime.now().toString()
     String lastDate = DateTime.now().toString().substring(0, 19);
-
     Uri url = Uri.parse("https://www.paulbrode.com/php/dbUpdatePotos.php");
     var data = {
       "POTONAME": potoName,
@@ -232,58 +227,59 @@ class _MyHomePageState extends State<MyHomePage> {
 
   //***********
   void createLegende() async {
-    // Mise à JOur d'une License
-    //$sql = "INSERT INTO LEGENDES  (FOTOINDEX, POTONAME,GAMENAME, LEGENDE)
     Uri url = Uri.parse("https://www.paulbrode.com/php/dblegendecreate.php");
-    var id = listObjetsCarton[counterObjets].fotoindex.toString();
-    var legende = listObjetsCarton[counterObjets].fotolegende;
-    var cegame = "gameboy";
-    var monpoto = "DEDE";
+    int laclef = buildClePML(listLegendes.length, NBMAXPOTOS, potoId);
+    var cegame = "FIRST";
+    var filename = listPhotoUpload[counterFotos].fotofilename;
+    var filetype = listPhotoUpload[counterFotos].fototype;
     var data = {
-      "FOTOINDEX": id,
-      "POTONAME": monpoto,
+      "FOTOFILENAME": filename,
+      "FOTOTYPE": filetype,
+      "POTONAME": potoName,
       "GAMENAME": cegame,
-      "LEGENDE": legende
+      "LEGENDE": legendeController.text,
+      "LEGENDEID": laclef.toString(),
     };
     var res = await http.post(url, body: data);
+
+    // Il Faut relire
+    getDataLegendes();
   }
 
-  //+++++++++++++++++++++
-  Future getDataFototek() async {
-    Uri url = Uri.parse("https://www.paulbrode.com/php/dbfototek.php");
-    //var data = {"dadate": dateSelected};
-    http.Response response = await http.get(url);
-    if (response.statusCode == 200) {
-      var datamysql = jsonDecode(response.body) as List;
-      setState(() {
-        okSave = 0;
-        listObjets = datamysql.map((xJson) => Fototon.fromJson(xJson)).toList();
-        _getListCarton();
-        ordreCarton = 0;
-        quelCarton = 54; //New
-        selectUnCarton();
-      });
-    } else {}
+//***********
+  void createVote(
+      int _legendeid, String _potoname, int _points, String _ipv4) async {
+    Uri url = Uri.parse("https://www.paulbrode.com/php/createVOTE.php");
+    var data = {
+      "LEGENDEID": _legendeid.toString(),
+      "POTONAME": _potoname,
+      "VOTEPOINTS": _points.toString(),
+      "IPV4": _ipv4,
+    };
+    var res = await http.post(url, body: data);
+    print("+++++A VOT2");
+    // Il Faut relire
+    // getDataLegendes();
   }
 
   //+++++++++++++++++++++
   Future getDataUpload() async {
     // Lire les Images  Uploadés par les  Users
-    Uri url = Uri.parse("https://www.paulbrode.com/php/dbfototek.php");
-
+    Uri url = Uri.parse("https://www.paulbrode.com/php/readFOTOUPLOAD.php");
     http.Response response = await http.get(url);
     if (response.statusCode == 200) {
       var datamysql = jsonDecode(response.body) as List;
       setState(() {
-        okSave = 0;
         listUpload =
             datamysql.map((xJson) => Photoupload.fromJson(xJson)).toList();
-        _getListCarton();
-        ordreCarton = 0;
-        quelCarton = 54; //New
-        selectUnCarton();
+        selectUnSet();
       });
     } else {}
+  }
+
+  void refresh() {
+    getDataLegendes();
+    getVotes();
   }
 
 //+++++++++++++++++++++
@@ -296,23 +292,23 @@ class _MyHomePageState extends State<MyHomePage> {
         okSave = 0;
         listLegendes =
             datamysql.map((xJson) => Legendes.fromJson(xJson)).toList();
-        _getListCarton();
-        ordreCarton = 0;
-        quelCarton = 54; //New
-        selectUnCarton();
       });
     } else {}
   }
 
   Future getIP() async {
     final ipv4 = await Ipify.ipv4();
-
     final ipv6 = await Ipify.ipv64();
-
     final ipv4json = await Ipify.ipv64(format: Format.JSON);
-
     ipv4name = ipv4;
-    // The response type can be text, json or jsonp
+  }
+
+  int buildClePML(int n, int p, int q) {
+    // n cest le nombre de records de la Table à la dernierer  Si il ya  20 joueurs
+    // Index devra tenir copte de  ces 2 infos
+    // resultats n * p +  q
+    int res = n * p + q;
+    return (res);
   }
 
 //+++++++++++++++++++++
@@ -329,26 +325,38 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 //+++++++++++++++++++++
+  Future getVotes() async {
+    Uri url = Uri.parse("https://www.paulbrode.com/php/readVOTES.php");
+    http.Response response = await http.get(url);
+    if (response.statusCode == 200) {
+      var datamysql = jsonDecode(response.body) as List;
+      setState(() {
+        listVotes = datamysql.map((xJson) => Votes.fromJson(xJson)).toList();
+      });
+    } else {}
+  }
+
+  void majFotoActive() {
+    // Initialise mafoto
+
+    labelLegende = "";
+    legendeController.text = labelLegende;
+    filouname = listPhotoUpload[counterFotos].fotofilename;
+    filoutype = listPhotoUpload[counterFotos].fototype;
+    mafoto = 'upload/';
+    mafoto = mafoto + filouname + '.' + filoutype.trim();
+    selectLegendesFoto();
+  }
+
+//+++++++++++++++++++++
   void _incrementCounter() {
     setState(() {
       okSave = 0;
       thiswidth = 200;
       thisheight = 200;
-
-      counterObjets++;
-      if (counterObjets >= objetsInCarton) counterObjets = 0;
-
-      labelTitre = listObjetsCarton[counterObjets].fototitre;
-      titreController.text = labelTitre;
-      labelLegende = listObjetsCarton[counterObjets].fotolegende;
-      legendeController.text = labelLegende;
-
-      String fotocon = (counterObjets + 1).toString();
-      if (counterObjets < 10) fotocon = 'red00' + fotocon;
-      if (counterObjets > 99) fotocon = 'red' + fotocon;
-      if ((counterObjets > 9) && (counterObjets < 100))
-        fotocon = 'red0' + fotocon;
-      mafoto = 'potophe/' + quelCarton.toString() + '/' + fotocon + '.png';
+      counterFotos++;
+      fotoSelected = listPhotoUpload.length; // ???
+      majFotoActive();
     });
   }
 
@@ -356,38 +364,12 @@ class _MyHomePageState extends State<MyHomePage> {
   void _decrementCounter() {
     setState(() {
       okSave = 0;
-      thiswidth = 200;
-      thisheight = 200;
-
-      counterObjets--;
-      if (counterObjets < 0) counterObjets = 0;
-      labelTitre = listObjetsCarton[counterObjets].fototitre;
-      titreController.text = labelTitre;
-      labelLegende = listObjetsCarton[counterObjets].fotolegende;
-      legendeController.text = labelLegende;
-
-      String fotocon = (counterObjets + 1).toString();
-      if (counterObjets < 10) fotocon = 'red00' + fotocon;
-      if (counterObjets > 99) fotocon = 'red' + fotocon;
-      if ((counterObjets > 9) && (counterObjets < 100))
-        fotocon = 'red0' + fotocon;
-      mafoto = 'potophe/' + quelCarton.toString() + '/' + fotocon + '.png';
+      thiswidth = 400;
+      thisheight = 400;
+      counterFotos--;
+      if (counterFotos < 0) counterFotos = 0;
+      majFotoActive();
     });
-  }
-
-//++++++++++++++++++++++++
-  void _getListCarton() {
-    mesCartons.clear();
-    for (Fototon _thisObjet in listObjets) {
-      int thisCarton = _thisObjet.fotocat;
-      int inside = 0;
-
-      for (var element in mesCartons) {
-        if (element == thisCarton) inside = 1;
-      }
-      if (inside == 0) mesCartons.add(thisCarton);
-    }
-    mesCartons.sort();
   }
 
 //+++++++++++++++++++++
@@ -395,11 +377,12 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     titreController = TextEditingController();
-    getDataFototek(); //Rep1
     getDataUpload(); // Rep2
     getDataLegendes();
     getPotos(); // User
+    getVotes();
     getIP();
+    print("------->" + listLegendes.length.toString());
   }
 
   //+++++++++++++++++++++
@@ -408,13 +391,11 @@ class _MyHomePageState extends State<MyHomePage> {
     // This method is rerun every time setState is called,
     return MaterialApp(
         home: Scaffold(
-      /* appBar: AppBar(
-        title: Text(widget.title),
-      ),*/
       body: Row(
         children: [
           Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
@@ -426,33 +407,39 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ],
                 ),
-                Slider(
-                  label: 'Hauteur',
-                  activeColor: Colors.orange,
-                  divisions: 10,
-                  min: 200,
-                  max: 600,
-                  value: thisheight,
-                  onChanged: (double newValue) {
-                    setState(() {
-                      newValue = newValue.round() as double;
-                      if (newValue != thisheight) thisheight = newValue;
-                    });
-                  },
+                SizedBox(
+                  width: thiswidth,
+                  child: Slider(
+                    label: 'Hauteur',
+                    activeColor: Colors.orange,
+                    divisions: 10,
+                    min: 200,
+                    max: 600,
+                    value: thisheight,
+                    onChanged: (double newValue) {
+                      setState(() {
+                        newValue = newValue.round() as double;
+                        if (newValue != thisheight) thisheight = newValue;
+                      });
+                    },
+                  ),
                 ),
-                Slider(
-                  label: 'Largeur',
-                  activeColor: Colors.blueAccent,
-                  divisions: 10,
-                  min: 200,
-                  max: 600,
-                  value: thiswidth,
-                  onChanged: (double newValue) {
-                    setState(() {
-                      newValue = newValue.round() as double;
-                      if (newValue != thiswidth) thiswidth = newValue;
-                    });
-                  },
+                SizedBox(
+                  width: thiswidth,
+                  child: Slider(
+                    label: 'Largeur',
+                    activeColor: Colors.blueAccent,
+                    divisions: 10,
+                    min: 200,
+                    max: 600,
+                    value: thiswidth,
+                    onChanged: (double newValue) {
+                      setState(() {
+                        newValue = newValue.round() as double;
+                        if (newValue != thiswidth) thiswidth = newValue;
+                      });
+                    },
+                  ),
                 ),
               ],
             ),
@@ -460,22 +447,6 @@ class _MyHomePageState extends State<MyHomePage> {
           Expanded(
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    controller: titreController,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: "Titre",
-                    ),
-                    onChanged: (text) {
-                      setState(() {
-                        labelTitre = titreController.text;
-                        listObjetsCarton[counterObjets].fototitre = labelTitre;
-                      });
-                    },
-                  ),
-                ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -488,8 +459,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       onChanged: (text) {
                         setState(() {
                           labelLegende = legendeController.text;
-                          listObjetsCarton[counterObjets].fotolegende =
-                              labelLegende;
                         });
                       },
                     ),
@@ -506,6 +475,16 @@ class _MyHomePageState extends State<MyHomePage> {
           //crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              iconSize: 45,
+              color: Colors.greenAccent,
+              tooltip: 'Refresh',
+              onPressed: () {
+                refresh();
+              },
+            ),
+
             FloatingActionButton(
               heroTag: 'decrement',
               onPressed: _decrementCounter,
@@ -518,9 +497,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                (counterObjets + 1).toString() +
-                    ' / ' +
-                    objetsInCarton.toString(),
+                (counterFotos).toString() + ' / ' + fotoSelected.toString(),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -536,41 +513,28 @@ class _MyHomePageState extends State<MyHomePage> {
               tooltip: 'Increment',
               child: const Icon(Icons.arrow_forward, size: 20),
             ),
-            IconButton(
-              icon: const Icon(Icons.save_sharp),
-              iconSize: 25,
-              color: Colors.deepPurple,
-              tooltip: 'save',
-              onPressed: () => updateData(),
-            ),
-            IconButton(
-              icon: const Icon(Icons.sanitizer_rounded),
-              iconSize: 25,
-              color: Colors.deepPurple,
-              tooltip: 'save',
-              onPressed: () => createLegende(),
-            ),
+
+            Visibility(
+                visible: _isVisible,
+                child: IconButton(
+                    icon: const Icon(Icons.save_sharp),
+                    iconSize: 35,
+                    color: Colors.deepPurple,
+                    tooltip: 'save',
+                    onPressed: () {
+                      // PAs de  Legende Vide et il faut un User déclaré
+                      if (labelLegende.length > 0 && potoId > 0)
+                        createLegende();
+                    })),
             //***
             IconButton(
-              icon: const Icon(Icons.calendar_today),
+              icon: const Icon(Icons.people_alt_rounded),
               iconSize: 25,
               color: Colors.blue,
               tooltip: 'Date du Game',
               onPressed: () => _selectDate(context),
             ),
-            /* Visibility(
-              visible: _isVisible,
-              child:  Text(
-                potoName,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    backgroundColor: Colors.red,
-                    color: Colors.black),
-              ),
-            ),*/
+
             Visibility(
               visible: _isVisible,
               child: BlinkText(
@@ -582,7 +546,18 @@ class _MyHomePageState extends State<MyHomePage> {
                 endColor: Colors.orange,
               ),
             ),
-            //finaldate = order.toString().substring(0, 10);
+            Visibility(
+                visible: _isVisible,
+                child: IconButton(
+                    icon: const Icon(Icons.calculate_outlined),
+                    iconSize: 55,
+                    color: Colors.red,
+                    tooltip: 'save',
+                    onPressed: () {
+                      // PAs de  Legende Vide et il faut un User déclaré
+                      if (labelLegende.length > 0 && potoId > 0)
+                        createLegende();
+                    })),
 
             ///****
           ]),

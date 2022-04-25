@@ -1,26 +1,7 @@
-class Fototon {
-  int fotoindex = 0;
-  String fototitre = "";
-  int fotocat = 0;
-  int fotonum = 0;
-  String fotolegende = "";
-  Fototon({
-    required this.fotoindex,
-    required this.fototitre,
-    required this.fotocat,
-    required this.fotonum,
-    required this.fotolegende,
-  });
-  factory Fototon.fromJson(Map<String, dynamic> json) {
-    return Fototon(
-      fotoindex: int.parse(json['FOTOINDEX']),
-      fotocat: int.parse(json['FOTOCAT']),
-      fotonum: int.parse(json['FOTONUM']),
-      fototitre: json['FOTOTITRE'] as String,
-      fotolegende: json['FOTOLEGENDE'] as String,
-    );
-  }
-}  // Images strockées
+import 'dart:core';
+
+const int NBMAXPOTOS = 25;
+
 class Photoupload {
   String fotofilename = "";
   String fototype = "";
@@ -45,8 +26,10 @@ class Photoupload {
       fotolegende: json['FOTOLEGENDE'] as String,
     );
   }
-}  // Images Users
+} // Images Users
+
 class Potos {
+  int potoid = 0;
   String potoname = "";
   String potopwd = "";
   String potodesc = "";
@@ -55,6 +38,7 @@ class Potos {
   String ipv4 = "";
 
   Potos({
+    required this.potoid,
     required this.potoname,
     required this.potopwd,
     required this.potodesc,
@@ -62,8 +46,10 @@ class Potos {
     required this.potolast,
     required this.ipv4,
   });
+
   factory Potos.fromJson(Map<String, dynamic> json) {
     return Potos(
+      potoid: int.parse(json['POTOID']),
       potoname: json['POTONAME'] as String,
       potopwd: json['POTOPWD'] as String,
       potodesc: json['POTODESC'] as String,
@@ -72,25 +58,71 @@ class Potos {
       ipv4: json['IPV4'] as String,
     );
   }
-}   // Users références
+} // Users références
+
+/*
+FOTOFILENAME | varchar(50) | YES  | MUL | NULL    |       |
+FOTOTYPE     | varchar(5)  | YES  |     | NULL    |       |
+POTONAME     | varchar(10) | YES  |     | NULL    |       |
+GAMENAME     | varchar(10) | YES  |     | NULL    |       |
+LEGENDE      | text        | YES  |     | NULL    |       |
+*/
+
 class Legendes {
-  // FOTOINDEX | POTONAME | GAMENAME | LEGENDE
-  int fotoindex = 0;
+  String fotofilename = "";
+  String fototype = "";
   String potoname = "";
   String gamename = "";
   String legende = "";
+  int legendeid = 0;
+  int internalVote=0; // bidouillage
+
   Legendes({
-    required this.fotoindex,
+    required this.fotofilename,
+    required this.fototype,
     required this.potoname,
     required this.gamename,
     required this.legende,
+    required this.legendeid,
   });
+
   factory Legendes.fromJson(Map<String, dynamic> json) {
     return Legendes(
-      fotoindex: int.parse(json['FOTOINDEX']),
+      fotofilename: json['FOTOFILENAME'] as String,
+      fototype: json['FOTOTYPE'] as String,
       potoname: json['POTONAME'] as String,
       gamename: json['GAMENAME'] as String,
       legende: json['LEGENDE'] as String,
+      legendeid: int.parse(json['LEGENDEID']),
     );
   }
-}  // Legendes données
+} // Legendes
+
+//
+class Votes {
+  /*
+LEGENDEID  | int         | NO   | PRI | NULL    |       |
+POTONAME   | varchar(10) | NO   | PRI | NULL    |       |
+VOTEPOINTS | int         | YES  |     | NULL    |       |
+IPV4       | varchar(30) | YES  |     | NULL    |
+*/
+  int legendeid = 0;
+  String potoname = "BOLOSS";
+  int votepoints = 0;
+  String ipv4 = "xx.xx.xx.xx";
+  Votes({
+    required this.legendeid,
+    required this.potoname,
+    required this.votepoints,
+    required this.ipv4,
+  });
+
+  factory Votes.fromJson(Map<String, dynamic> json) {
+    return Votes(
+      legendeid: int.parse(json['LEGENDEID']),
+      potoname: json['POTONAME'] as String,
+      votepoints: int.parse(json['VOTEPOINTS']),
+      ipv4: json['IPV4'] as String,
+    );
+  }
+} // Legendes données
