@@ -125,4 +125,27 @@ IPV4       | varchar(30) | YES  |     | NULL    |
       ipv4: json['IPV4'] as String,
     );
   }
-} // Legendes données
+} //  Mixage  de Légende et de Vote
+class Legovote {
+  String fotofilename = "";
+  String fototype = "";
+  String potoname = ""; // Poto qui a créé la légende
+  String gamename = "";
+  String legende = "";
+  int legendeid = 0;
+  String potovote = ""; //Poto qui a  noté  la légende
+  int votepoints = 0;
+  String ipv4 = "xx.xx.xx.xx";
+
+  Legovote({
+    required this.fotofilename,
+    required this.fototype,
+    required this.potoname,
+    required this.gamename,
+    required this.legende,
+    required this.legendeid,
+    required this.potovote,
+    required this.votepoints,
+    required this.ipv4,
+  });
+}
