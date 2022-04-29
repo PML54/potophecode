@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:blinking_text/blinking_text.dart';
 import 'package:dart_ipify/dart_ipify.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:potophe/admingame.dart';
 import 'package:potophe/briceclass.dart';
@@ -32,10 +33,13 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   final String title;
+
   const MyHomePage({Key? key, required this.title}) : super(key: key);
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
+
 class _MyHomePageState extends State<MyHomePage> {
   //
   DateTime currentDate = DateTime.now();
@@ -47,22 +51,28 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Legendes> listLegendesFoto = [];
   List<Potos> listPotos = [];
   List<Votes> listVotes = [];
+  String mafotodefo = "assets/marin.jpeg";
   String mafoto = "assets/marin.jpeg";
   String potoName = "xxxx";
   double thiswidth = 400;
   double thisheight = 400;
   String filouname = "";
   String filoutype = "";
+  String thisCaption = "???";
+  String thisCaptionNote = "";
+  int counterCaption = 0;
   int nbFotosSelected = 0;
   int counterFotos = 1;
   String ipv4name = "xx.xx.xx.xx";
   int note = 0;
   int potoId = 0;
   bool okUser = false; //  User Non déclaré
-  bool _isVisible = false; //
+  bool _isGamerOk = false; //
   bool _isAdmin = false; //
   bool _isSavingCaption = false; // Indicateur Saving en Cours
   bool _isSavingVotes = false; // Indicateur Saving en Cours
+  bool _isVoteOn = false;
+
   String labelTitre = "";
   String labelLegende = "";
 
@@ -86,216 +96,237 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Image.network(
-                  mafoto,
-                  fit: BoxFit.fill,
-                  width: thiswidth,
-                  height: thisheight,
-                ),
-                SizedBox(
-                  width: thiswidth,
-                  child: Slider(
-                    label: 'Hauteur',
-                    activeColor: Colors.orange,
-                    divisions: 10,
-                    min: 200,
-                    max: 500,
-                    value: thisheight,
-                    onChanged: (double newValue) {
-                      setState(() {
-                        newValue = newValue.round() as double;
-                        if (newValue != thisheight) thisheight = newValue;
-                      });
-                    },
-                  ),
-                ),
-                SizedBox(
-                  width: thiswidth,
-                  child: Slider(
-                    label: 'Largeur',
-                    activeColor: Colors.blueAccent,
-                    divisions: 10,
-                    min: 200,
-                    max: 500,
-                    value: thiswidth,
-                    onChanged: (double newValue) {
-                      setState(() {
-                        newValue = newValue.round() as double;
-                        if (newValue != thiswidth) thiswidth = newValue;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Visibility(
-                        visible: _isVisible,
-                        child: IconButton(
-                            icon: const Icon(Icons.save_sharp),
-                            iconSize: 35,
-                            color: Colors.blue,
-                            tooltip: 'Save Caption',
-                            onPressed: () {
-                              setState(() {
-                                _isSavingCaption = true;
-                              });
+                Visibility(
+                    // 2 fois invisibles
+                    visible: _isVoteOn,
+                    child: OutlinedButton(
 
-                              // PAs de  Legende Vide et il faut un User déclaré
-                              if (labelLegende.length > 0 && potoId > 0)
-                                createLegende();
-                              // On va gagner de la place et Sauver les votes
-                              _isSavingVotes = true;
-                              saveVotes();
-                            })),
-                    Visibility(
-                      visible: _isSavingCaption,
-                      child: Visibility(
-                        // 2 fois invisibles
-                        visible: _isVisible,
-                        child: BlinkText(
-                          " Saving Comm",
-                          style: TextStyle(
-                              fontSize: 20.0,
-                              color: Colors.red,
-                              backgroundColor: Colors.red),
-                          endColor: Colors.orange,
+                      onPressed: () {
+                        debugPrint('Received click');
+
+                        setState(() {
+
+                          thisCaptionNote ="";
+                          if (listLegendesFoto[counterCaption].potoname != potoName) {
+                            listLegendesFoto[counterCaption].internalVote++;
+                            if (listLegendesFoto[counterCaption].internalVote > 10) {
+                              listLegendesFoto[counterCaption].internalVote = 1;
+                            }
+                            thisCaptionNote= listLegendesFoto[counterCaption].internalVote.toString();
+                          }
+                        });
+
+
+                        },
+                      child: Text(thisCaption +" = " +thisCaptionNote ,
+                        style: GoogleFonts.bangers(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w100,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.blue,
                         ),
                       ),
+                    )),
+                Visibility(
+                  // 2 fois invisibles
+                  visible: !(_isVoteOn),
+                  child: TextField(
+                    controller: legendeController,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: "",
                     ),
-                    Visibility(
-                      visible: _isSavingVotes,
-                      child: Visibility(
-                        // 2 fois invisibles
-                        visible: _isVisible,
-                        child: BlinkText(
-                          " Saving Notes",
-                          style: TextStyle(
-                              fontSize: 20.0,
-                              color: Colors.red,
-                              backgroundColor: Colors.red),
-                          endColor: Colors.blue,
-                        ),
-                      ),
+
+                    style: GoogleFonts.bangers(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w100,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.redAccent,
                     ),
-                  ],
+                    onChanged: (text) {
+                      setState(() {
+                        labelLegende = legendeController.text;
+                      });
+                    },
+                  ),
                 ),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TextField(
-                      controller: legendeController,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: "Enter your Caption",
-                      ),
-                      onChanged: (text) {
-                        setState(() {
-                          labelLegende = legendeController.text;
-                        });
-                      },
-                    ),
+                  child: Image.network(
+                    mafoto,
+                    fit: BoxFit.fill,
+                    width: thiswidth,
+                    height: thisheight,
                   ),
                 ),
-                Visibility(
-                    visible: _isVisible,
-                    child: IconButton(
-                        icon: const Icon(Icons.save_sharp),
-                        iconSize: 45,
-                        color: Colors.red,
-                        tooltip: 'Save  Notes',
-                        onPressed: () {
-                          // Controle
-                          saveVotes();
-                        })),
-                getListViewReduce(),
+                //  getListViewReduce(),
               ],
             ),
           ),
         ],
       ),
 
-      bottomNavigationBar: Row(
-          //crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            IconButton(
-                icon: const Icon(Icons.arrow_back),
-                iconSize: 25,
-                color: Colors.blue,
-                tooltip: 'decrement',
-                onPressed: () {
-                  _decrementCounter();
-                  // refresh();
-                }),
+      bottomNavigationBar: SizedBox(
+        child: Row(
+            //crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: <Widget>[
+              IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  iconSize: 15,
+                  color: Colors.red,
+                  tooltip: 'decrement',
+                  onPressed: () {
+                    _decrementCounter();
+                  }),
 
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                (counterFotos).toString() + ' / ' + nbFotosSelected.toString(),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    backgroundColor: Colors.white,
-                    color: Colors.black),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  (counterFotos).toString() + '/' + nbFotosSelected.toString(),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                      backgroundColor: Colors.white,
+                      color: Colors.black),
+                ),
               ),
-            ),
-            IconButton(
-                icon: const Icon(Icons.arrow_forward),
-                iconSize: 25,
-                color: Colors.blue,
-                tooltip: '+1',
-                onPressed: () {
-                  _incrementCounter();
-                  // refresh();
-                }),
-
-            //***
-            IconButton(
-                icon: const Icon(Icons.people_alt_rounded),
-                iconSize: 25,
-                color: Colors.blue,
-                tooltip: 'Date du Game',
-                onPressed: () {
-                  _selectDate(context);
-                  // refresh();
-                }),
-
-            Visibility(
-              visible: _isVisible,
-              child: BlinkText(
-                potoName,
-                style: TextStyle(
-                    fontSize: 20.0,
-                    color: Colors.blue,
-                    backgroundColor: Colors.red),
-                endColor: Colors.orange,
-              ),
-            ),
-
-            Visibility(
-                visible: _isAdmin,
+              IconButton(
+                  icon: const Icon(Icons.arrow_forward),
+                  iconSize: 15,
+                  color: Colors.red,
+                  tooltip: '+1',
+                  onPressed: () {
+                    _incrementCounter();
+                  }),
+              IconButton(
+                  icon: const Icon(Icons.exit_to_app_sharp),
+                  iconSize: 15,
+                  color: Colors.green,
+                  tooltip: 'Etirer Horizontal',
+                  onPressed: () {
+                    _incrementWidth();
+                  }),
+              IconButton(
+                  icon: const Icon(Icons.vertical_align_center_outlined),
+                  iconSize: 15,
+                  color: Colors.green,
+                  tooltip: 'Etirer vertical',
+                  onPressed: () {
+                    _incrementHigh();
+                  }),
+              //***
+              IconButton(
+                  icon: const Icon(Icons.people_alt_rounded),
+                  iconSize: 15,
+                  color: Colors.red,
+                  tooltip: 'Who Are You',
+                  onPressed: () {
+                    _selectDate(context);
+                  }),
+              Visibility(
+                visible: _isGamerOk,
                 child: IconButton(
-                    icon: const Icon(Icons.agriculture_rounded),
-                    iconSize: 25,
+
+                    // Niveau du Vote
+                    icon: const Icon(Icons.arrow_upward_sharp),
+                    iconSize: 15,
                     color: Colors.red,
-                    tooltip: 'Regarder les Notes',
+                    tooltip: 'Autres Captions',
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AdminGame(title: "Admin Game"),
-                        ),
-                      );
-                    })),
-          ]),
+                      // Mode Votage
+                      setState(() {
+                        _isVoteOn = true;
+                      });
+                       counterCaption++;
+                       if (counterCaption>listLegendesFoto.length)  counterCaption=0;
+                     thisCaption = listLegendesFoto[counterCaption].legende ;
+
+                    }),
+              ),
+              Visibility(
+                visible: _isGamerOk,
+                child: Text(
+                  potoName,
+                  style: TextStyle(
+                      fontSize: 9.0,
+                      color: Colors.blue,
+                      backgroundColor: Colors.white),
+                ),
+              ),
+              Visibility(
+                  visible: _isGamerOk,
+                  child: IconButton(
+                      icon: const Icon(Icons.save_sharp),
+                      iconSize: 15,
+                      color: Colors.blue,
+                      tooltip: 'Save Caption',
+                      onPressed: () {
+                        setState(() {
+                          _isSavingCaption = true;
+                        });
+
+                        if (labelLegende.length > 0 && potoId > 0) {
+                          // Gamer OK
+                          createLegende();
+                        } else {
+                          _isSavingCaption = false;
+                        }
+                        // On va gagner de la place et Sauver les votes
+                        _isSavingVotes = true;
+                        saveVotes();
+                      })),
+              Visibility(
+                visible: _isSavingCaption,
+                child: Visibility(
+                  // 2 fois invisibles
+                  visible: _isGamerOk,
+                  child: BlinkText(
+                    " Saving Caption ",
+                    style: TextStyle(
+                        fontSize: 10.0,
+                        color: Colors.blue,
+                        backgroundColor: Colors.yellowAccent),
+                    endColor: Colors.orange,
+                  ),
+                ),
+              ),
+              Visibility(
+                visible: _isSavingVotes,
+                child: Visibility(
+                  // 2 fois invisibles
+                  visible: _isGamerOk,
+
+                  child: BlinkText(
+                    " Saving Votes",
+                    style: TextStyle(
+                        fontSize: 20.0,
+                        color: Colors.red,
+                        backgroundColor: Colors.greenAccent),
+                    endColor: Colors.blue,
+                  ),
+                ),
+              ),
+
+              Visibility(
+                  visible: _isAdmin,
+                  child: IconButton(
+                      icon: const Icon(Icons.agriculture_rounded),
+                      iconSize: 15,
+                      color: Colors.red,
+                      tooltip: 'Regarder les Notes',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                AdminGame(title: "Admin Game"),
+                          ),
+                        );
+                      })),
+            ]),
+      ),
       // This trailing comma makes auto-formatting nicer for build methods.
     ));
   }
@@ -309,7 +340,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void createLegende() async {
-    Uri url = Uri.parse("https://www.paulbrode.com/php/dblegendecreate.php");
+    Uri url =
+        Uri.parse("https://www.paulbrode.com/php/createUpdateLEGENDE.php");
     int laclef = buildClePML(listLegendes.length, NBMAXPOTOS, potoId);
     // Je veux une clé  non comme Primary mais unique
     // Aussi comme on est en environnement Multiuser
@@ -328,6 +360,7 @@ class _MyHomePageState extends State<MyHomePage> {
     var res = await http.post(url, body: data);
     // Il Faut relire
     getDataLegendes();
+    updatePotos(); // toujours là
     setState(() {
       _isSavingCaption = false;
     });
@@ -346,6 +379,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // On relit derriere
     getVotes(); // Secure
+    updatePotos(); // On est Tours la
   }
 
   Future getDataLegendes() async {
@@ -390,21 +424,11 @@ class _MyHomePageState extends State<MyHomePage> {
           return ListTile(
               //leading: Icon(Icons.favorite),
               title: Text(
-                listLegendesFoto[index].legende,
+                listLegendesFoto[index].internalVote.toString() +
+                    "/10 ->" +
+                    listLegendesFoto[index].legende,
                 style: TextStyle(
-                    fontSize: 17, fontFamily: 'Serif', color: Colors.green),
-              ),
-              subtitle: Text(
-                "Moi " +
-                    potoName +
-                    ", je donne un " +
-                    listLegendesFoto[index].internalVote.toString() +
-                    "/10  " +
-                    " au caption  de   " +
-                    listLegendesFoto[index].potoname +
-                    ".",
-                style: TextStyle(
-                    fontSize: 10, fontFamily: 'Serif', color: Colors.black),
+                    fontSize: 12, fontFamily: 'Serif', color: Colors.green),
               ),
               dense: true,
               onTap: () {
@@ -427,7 +451,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void getPotoname() {
     potoName = "xxxx";
     okUser = false;
-    _isVisible = false;
+    _isGamerOk = false;
     _isAdmin = false;
     for (Potos _thisObjet in listPotos) {
       if (_thisObjet.potopwd == finalDate) {
@@ -436,7 +460,7 @@ class _MyHomePageState extends State<MyHomePage> {
           potoId = _thisObjet.potoid;
           if (potoName == "PML") _isAdmin = true;
           okUser = true;
-          _isVisible = true;
+          _isGamerOk = true;
           updatePotos();
         });
       }
@@ -477,16 +501,24 @@ class _MyHomePageState extends State<MyHomePage> {
     getVotes();
     getIP();
     counterFotos = 1;
-    //majFotoActive();
+    // majFotoActive();
   }
 
   void majFotoActive() {
     // Initialise mafoto
     // Passage obligatoire  ; A surveiller
     // On change
+    if (!_isGamerOk) {
+      mafoto = "assets/marin.jpeg";
+      return;
+    }
     if (_isSavingCaption || _isSavingVotes) {
       print(" should never Happen");
     }
+
+    // On se prepare pour lhistorique
+    thisCaption = "";
+    counterCaption = 0;
     _isSavingVotes = false;
     _isSavingCaption = false;
     labelLegende = "";
@@ -495,7 +527,8 @@ class _MyHomePageState extends State<MyHomePage> {
     filoutype = listPhotoUpload[counterFotos].fototype;
     mafoto = 'upload/'; //<PML TODO>
     mafoto = mafoto + filouname + '.' + filoutype.trim();
-    selectLegendesFoto();
+    selectLegendesFoto(); // Listing des  Caption par Foto Active
+
     // Regarder Si il y a commentaire pour lutilisateur actif
     labelLegende = "";
     for (Legendes _thisObjet in listLegendes) {
@@ -508,33 +541,6 @@ class _MyHomePageState extends State<MyHomePage> {
     legendeController.text = labelLegende;
   }
 
-  void refresh() {
-    super.initState();
-    setState(() {
-      okUser = false; //  User Non déclaré
-      _isVisible = false; //
-      _isAdmin = false; //
-      labelTitre = "";
-      labelLegende = "";
-      okUser = false; //  User Non déclaré
-      _isVisible = false; //
-      _isAdmin = false; //
-      int okSave = 0; //
-      String filouname = "";
-      String filoutype = "";
-
-      int counterFotos = 1;
-      String ipv4name = "xx.xx.xx.xx";
-      int note = 0;
-      int potoId = 0;
-      getDataUpload(); // Rep2
-      getDataLegendes();
-      getPotos(); // User
-      getVotes();
-      getIP();
-    });
-  }
-
   void saveVotes() {
     bool _found = false;
     //  Maintenat on Va verifier si il existe des  votes de du poto actif
@@ -544,7 +550,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // Une relecture
     getVotes();
 
-    print(" Entree Save Votes" + listLegendesFoto.length.toString());
     for (Legendes _thisLegende in listLegendesFoto) {
       int _thisIndex = _thisLegende.legendeid;
 
@@ -564,12 +569,12 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       }
     }
-    _isSavingVotes = true;
+    _isSavingVotes = false;
   }
 
   void selectLegendesFoto() {
-    //  Creer Une Liste des  Legendes  concernat une Photo
-    if (!okUser) return; // User Non  référencé
+    //  Créer Une Liste des  Legendes  concernant une Photo
+    if (!okUser) return; // User Non  réfèrencé
     bool _found = false;
     listLegendesFoto.clear();
     for (Legendes _thisObjet in listLegendes) {
@@ -611,8 +616,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void selectUnSet() {
     //listUpload contient tout
-    // On prend une partie mais laqueelle ? A définit
+    // On prend une partie mais laqueelle ? A définir
     listPhotoUpload.clear();
+
+    int dd = listUpload.length;
+
+    //  Attention à la clé si on ne genere qu'une partie
+    // Donc si Novele Partie  Suppression imperatives des  Legende et Votes
 
     for (Photoupload _thisObjet in listUpload) {
       if (_thisObjet.fotoproprio == "INCONNU") {
@@ -627,9 +637,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void updatePotos() async {
-    // Mettre à Jour 2  Champs
-    //dbUpdatePotos.php
-    //DateTime.now().toString()
+    // Mettre à Jour Status et derier accès
     String lastDate = DateTime.now().toString().substring(0, 19);
     Uri url = Uri.parse("https://www.paulbrode.com/php/dbUpdatePotos.php");
     var data = {
@@ -656,22 +664,32 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _decrementCounter() {
     setState(() {
-      print("Decrement");
-      thiswidth = 400;
-      thisheight = 400;
-      counterFotos--;
+      _isVoteOn = false;
+      if (okUser) counterFotos--;
       if (counterFotos < 1) counterFotos = 1;
       majFotoActive();
     });
   }
 
   void _incrementCounter() {
+    _isVoteOn = false;
     setState(() {
-      print("Increment");
-      thiswidth = 400;
-      thisheight = 400;
-      counterFotos++;
+      if (okUser) counterFotos++;
       majFotoActive();
+    });
+  }
+
+  void _incrementHigh() {
+    setState(() {
+      thisheight = thisheight + 50;
+      if (thisheight > 600) thisheight = 400;
+    });
+  }
+
+  void _incrementWidth() {
+    setState(() {
+      thiswidth = thiswidth + 50;
+      if (thiswidth > 750) thiswidth = 400;
     });
   }
 
@@ -687,6 +705,8 @@ class _MyHomePageState extends State<MyHomePage> {
         currentDate = pickedDate;
         finalDate = pickedDate.toString().substring(0, 10);
         getPotoname();
+        counterFotos = 1;
+        majFotoActive();
       });
     }
   }
