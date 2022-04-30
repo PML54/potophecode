@@ -49,17 +49,20 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Photoupload> listPhotoUpload = [];
   List<Legendes> listLegendes = [];
   List<Legendes> listLegendesFoto = [];
+  List<Logovofo> listLogovofo = [];
   List<Potos> listPotos = [];
   List<Votes> listVotes = [];
   String mafotodefo = "assets/marin.jpeg";
   String mafoto = "assets/marin.jpeg";
   String potoName = "xxxx";
+
   double thiswidth = 400;
   double thisheight = 400;
   String filouname = "";
   String filoutype = "";
   String thisCaption = "???";
   String thisCaptionNote = "";
+  String gameACTIF = "ADEFINIR";
   int counterCaption = 0;
   int nbFotosSelected = 0;
   int counterFotos = 1;
@@ -100,26 +103,30 @@ class _MyHomePageState extends State<MyHomePage> {
                     // 2 fois invisibles
                     visible: _isVoteOn,
                     child: OutlinedButton(
-
                       onPressed: () {
-                        debugPrint('Received click');
-
                         setState(() {
-
-                          thisCaptionNote ="";
-                          if (listLegendesFoto[counterCaption].potoname != potoName) {
-                            listLegendesFoto[counterCaption].internalVote++;
-                            if (listLegendesFoto[counterCaption].internalVote > 10) {
-                              listLegendesFoto[counterCaption].internalVote = 1;
+                          thisCaptionNote = "";
+                          int _laNote = listLogovofo[counterCaption].votepoints;
+                          if (listLogovofo[counterCaption].potoname !=
+                              potoName) {
+                            // Toujours le cas
+                            thisCaption = listLogovofo[counterCaption].legende;
+                            _laNote++;
+                            if (_laNote > 10) {
+                              _laNote = 1;
                             }
-                            thisCaptionNote= listLegendesFoto[counterCaption].internalVote.toString();
+
+                            listLogovofo[counterCaption].votepoints = _laNote;
+                            thisCaptionNote = _laNote.toString();
+                          } else {
+                            print(
+                                " Should never Happen listLogovofo[counterCaption]");
                           }
                         });
-
-
-                        },
-                      child: Text(thisCaption +" = " +thisCaptionNote ,
-                        style: GoogleFonts.bangers(
+                      },
+                      child: Text(
+                        thisCaption + " = " + thisCaptionNote,
+                        style: GoogleFonts.acme(
                           fontSize: 14,
                           fontWeight: FontWeight.w100,
                           fontStyle: FontStyle.italic,
@@ -136,8 +143,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       border: OutlineInputBorder(),
                       labelText: "",
                     ),
-
-                    style: GoogleFonts.bangers(
+                    style: GoogleFonts.acme(
                       fontSize: 20,
                       fontWeight: FontWeight.w100,
                       fontStyle: FontStyle.italic,
@@ -238,22 +244,20 @@ class _MyHomePageState extends State<MyHomePage> {
                       // Mode Votage
                       setState(() {
                         _isVoteOn = true;
-                      });
-                       counterCaption++;
-                       if (counterCaption>listLegendesFoto.length)  counterCaption=0;
-                     thisCaption = listLegendesFoto[counterCaption].legende ;
+                        print ("counterCaption" +counterCaption.toString() +
+                            "listLegendesFoto.length " +listLegendesFoto.length.toString()+
+                        counterFotos.toString());
+                        counterCaption++;
 
+                        if (counterCaption >= listLegendesFoto.length) {
+                          counterCaption = 0;
+                        }
+
+                        thisCaption = listLogovofo[counterCaption].legende;
+                        thisCaptionNote =
+                            listLogovofo[counterCaption].votepoints.toString();
+                      });
                     }),
-              ),
-              Visibility(
-                visible: _isGamerOk,
-                child: Text(
-                  potoName,
-                  style: TextStyle(
-                      fontSize: 9.0,
-                      color: Colors.blue,
-                      backgroundColor: Colors.white),
-                ),
               ),
               Visibility(
                   visible: _isGamerOk,
@@ -278,6 +282,18 @@ class _MyHomePageState extends State<MyHomePage> {
                         saveVotes();
                       })),
               Visibility(
+                visible: _isGamerOk,
+                child: Text(
+                  potoName,
+                  style: TextStyle(
+                      fontSize: 9.0,
+                      color: Colors.blue,
+                      backgroundColor: Colors.white),
+                ),
+              ),
+
+              // Message furtif
+              Visibility(
                 visible: _isSavingCaption,
                 child: Visibility(
                   // 2 fois invisibles
@@ -301,21 +317,22 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: BlinkText(
                     " Saving Votes",
                     style: TextStyle(
-                        fontSize: 20.0,
+                        fontSize: 15.0,
                         color: Colors.red,
                         backgroundColor: Colors.greenAccent),
                     endColor: Colors.blue,
                   ),
                 ),
               ),
-
+//--> Tracteur
               Visibility(
+                  // Admin
                   visible: _isAdmin,
                   child: IconButton(
                       icon: const Icon(Icons.agriculture_rounded),
                       iconSize: 15,
                       color: Colors.red,
-                      tooltip: 'Regarder les Notes',
+                      tooltip: 'Reporting',
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -339,7 +356,9 @@ class _MyHomePageState extends State<MyHomePage> {
     return (res);
   }
 
-  void createLegende() async {
+
+
+Future createLegende() async {
     Uri url =
         Uri.parse("https://www.paulbrode.com/php/createUpdateLEGENDE.php");
     int laclef = buildClePML(listLegendes.length, NBMAXPOTOS, potoId);
@@ -359,6 +378,15 @@ class _MyHomePageState extends State<MyHomePage> {
     };
     var res = await http.post(url, body: data);
     // Il Faut relire
+    // Creation  des Votes Vierges
+    for (Potos _thisPoto in listPotos) {
+      if (_thisPoto.potoname != potoName)  {
+        createVote(laclef, _thisPoto.potoname, 0, ipv4name,potoName
+            ); //
+      }
+    }
+
+
     getDataLegendes();
     updatePotos(); // toujours là
     setState(() {
@@ -366,14 +394,15 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void createVote(
-      int _legendeid, String _potoname, int _points, String _ipv4) async {
+Future createVote(int _legendeid, String _potovotant, int _points, String _ipv4,
+      String _potoname) async {
     Uri url = Uri.parse("https://www.paulbrode.com/php/createVOTE.php");
     var data = {
       "LEGENDEID": _legendeid.toString(),
-      "POTONAME": _potoname,
+      "POTOVOTANT": _potovotant,
       "VOTEPOINTS": _points.toString(),
       "IPV4": _ipv4,
+      "POTONAME": _potoname,
     };
     var res = await http.post(url, body: data);
 
@@ -415,39 +444,6 @@ class _MyHomePageState extends State<MyHomePage> {
     ipv4name = ipv4;
   }
 
-  Expanded getListViewReduce() {
-    //listLegendesFoto
-    if (!okUser) return Expanded(child: Text(''));
-    var listView = ListView.builder(
-        itemCount: listLegendesFoto.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-              //leading: Icon(Icons.favorite),
-              title: Text(
-                listLegendesFoto[index].internalVote.toString() +
-                    "/10 ->" +
-                    listLegendesFoto[index].legende,
-                style: TextStyle(
-                    fontSize: 12, fontFamily: 'Serif', color: Colors.green),
-              ),
-              dense: true,
-              onTap: () {
-                setState(() {
-                  // On connait Index de la Legendre
-                  // Ou Storcker Les Notes
-                  if (listLegendesFoto[index].potoname != potoName) {
-                    listLegendesFoto[index].internalVote++;
-                    if (listLegendesFoto[index].internalVote > 10) {
-                      listLegendesFoto[index].internalVote = 0;
-                    }
-                  }
-                });
-              });
-        });
-
-    return (Expanded(child: listView));
-  }
-
   void getPotoname() {
     potoName = "xxxx";
     okUser = false;
@@ -486,9 +482,7 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         listVotes = datamysql.map((xJson) => Votes.fromJson(xJson)).toList();
       });
-    } else {
-      print("Pb getVotes " + response.statusCode.toString());
-    }
+    } else {}
   }
 
   @override
@@ -513,7 +507,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
     if (_isSavingCaption || _isSavingVotes) {
-      print(" should never Happen");
+      print(" should never Happen N°1");
     }
 
     // On se prepare pour lhistorique
@@ -543,82 +537,104 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void saveVotes() {
     bool _found = false;
-    //  Maintenat on Va verifier si il existe des  votes de du poto actif
-    //  sur ces légendes
-    // Je vais les rlire
-
     // Une relecture
     getVotes();
+    // <PML> Pas sur
 
-    for (Legendes _thisLegende in listLegendesFoto) {
-      int _thisIndex = _thisLegende.legendeid;
-
-      for (Votes _thisVote in listVotes) {
-        _found = false;
-
-        if ((_thisVote.legendeid == _thisIndex) &&
-            _thisLegende.potoname != potoName) {
-          // Mettre  à Jour il existe
-          _thisVote.votepoints = _thisLegende.internalVote;
-          _found = true;
-
-          updateVote(_thisVote.legendeid, potoName, _thisVote.votepoints);
-        } else {
-          // Au suivant ( Jacques Brel)
-
-        }
-      }
+    for (Logovofo _thisLogovofo in listLogovofo) {
+      int _thisIndex = _thisLogovofo.legendeid;
+          updateVote(_thisLogovofo.legendeid, _thisLogovofo.potovotant,
+          _thisLogovofo.votepoints);
     }
     _isSavingVotes = false;
   }
 
   void selectLegendesFoto() {
-    //  Créer Une Liste des  Legendes  concernant une Photo
+    //  Créer Une Liste des  Legendes   concernant une Photo
     if (!okUser) return; // User Non  réfèrencé
     bool _found = false;
-    listLegendesFoto.clear();
+    getVotes(); // <PML> Peut ete en double
+    listLegendesFoto
+        .clear(); // On ne va prendre que le s legendes deune photo aure que le sienne
+
     for (Legendes _thisObjet in listLegendes) {
       if ((_thisObjet.fotofilename == filouname) &&
-          (_thisObjet.fototype == filoutype)) {
-        if ((_thisObjet.potoname != potoName)) listLegendesFoto.add(_thisObjet);
+          (_thisObjet.fototype == filoutype) &&
+          (_thisObjet.potoname != potoName)) {
+        listLegendesFoto.add(_thisObjet);
       }
     }
 
-    //  Maintenant  verifieons si il existe des  votes du poto actif
-    //  sur ces légendes
-    // Je vais les rlire
+
+    //*********
+
+    bool _reload=false;
+    listLogovofo.clear();
     for (Legendes _thisLegende in listLegendesFoto) {
       int thisindex = _thisLegende.legendeid;
-      //potoname actif
-      // On va balayer les Votes
       _found = false;
       for (Votes _thisVote in listVotes) {
         _found = false;
         if ((_thisVote.legendeid == thisindex) &&
-            (_thisVote.potoname == potoName)) {
-          // Mettre  à Jour il existe
-          _thisLegende.internalVote = _thisVote.votepoints;
-          _found = true;
-          // createVote(_thisVote.legendeid, potoName, 0, ipv4name);
-        } else {
-          //Il faut le creer avant de le Mettre à Jour
-
-        }
+            (_thisVote.potovotant == potoName)) {
+                    _found = true;
+        } else {}
       }
-
       if (!_found) {
         if (potoName != _thisLegende.potoname) {
-          createVote(thisindex, potoName, 0, ipv4name);
+          print  ("  SHould Never Happen  Creation  "+ thisindex.toString() );
+       /*
+          createVote(thisindex, potoName, 0, ipv4name,
+              _thisLegende.potoname); // votant
+          _reload =true;
+*/
         }
       }
     }
-  }
+
+    //*************
+    //  Maintenant  verifieons si il existe des  votes du poto actif
+
+    listLogovofo.clear();
+    for (Legendes _thisLegende in listLegendesFoto) {
+      int thisindex = _thisLegende.legendeid;
+      _found = false;
+      for (Votes _thisVote in listVotes) {
+        _found = false;
+        if ((_thisVote.legendeid == thisindex) &&
+            (_thisVote.potovotant == potoName)) {
+          // Mettre  à Jour il existe
+          Logovofo _logofo = Logovofo(
+              fotofilename: _thisLegende.fotofilename,
+              fototype: _thisLegende.fototype,
+              potoname: _thisLegende.potoname,
+              gamename: gameACTIF,
+              legende: _thisLegende.legende,
+              legendeid: _thisLegende.legendeid,
+              potovotant: potoName,
+              votepoints: _thisVote.votepoints);
+          listLogovofo.add(_logofo);
+          _found = true;
+        } else {}
+      }
+      if (!_found) {
+
+     print  (" Should Never  Happen  N°5  "+ thisindex.toString() );
+      //on a a pas trouve le record On va le cxréer
+        /*  createVote(thisindex, potoName, 0, ipv4name,
+              _thisLegende.potoname); // votant
+          _reload =true;*/
+
+        }
+      }
+    }
+
+
 
   void selectUnSet() {
     //listUpload contient tout
     // On prend une partie mais laqueelle ? A définir
     listPhotoUpload.clear();
-
     int dd = listUpload.length;
 
     //  Attention à la clé si on ne genere qu'une partie
@@ -637,28 +653,25 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void updatePotos() async {
-    // Mettre à Jour Status et derier accès
     String lastDate = DateTime.now().toString().substring(0, 19);
     Uri url = Uri.parse("https://www.paulbrode.com/php/dbUpdatePotos.php");
     var data = {
       "POTONAME": potoName,
       "POTOSTATUS": "1",
       "POTOLAST": lastDate,
-      "IPV4": ipv4name
+      "IPV4": ipv4name,
     };
     var res = await http.post(url, body: data);
   }
 
-  void updateVote(int _legendeid, String _potoname, int _points) async {
+  void updateVote(int _legendeid, String _potovotant, int _points) async {
     Uri url = Uri.parse("https://www.paulbrode.com/php/updateVOTE.php");
     var data = {
       "LEGENDEID": _legendeid.toString(),
-      "POTONAME": _potoname,
+      "POTOVOTANT": _potovotant,
       "VOTEPOINTS": _points.toString(),
     };
     var res = await http.post(url, body: data);
-
-    // Il Faut relire
     // getDataLegendes();
   }
 

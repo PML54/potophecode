@@ -107,22 +107,25 @@ VOTEPOINTS | int         | YES  |     | NULL    |       |
 IPV4       | varchar(30) | YES  |     | NULL    |
 */
   int legendeid = 0;
-  String potoname = "BOLOSS";
+  String potovotant = "votant";
   int votepoints = 0;
   String ipv4 = "xx.xx.xx.xx";
+  String potoname = "candidat";
   Votes({
     required this.legendeid,
-    required this.potoname,
+    required this.potovotant,
     required this.votepoints,
     required this.ipv4,
+    required this.potoname,
   });
 
   factory Votes.fromJson(Map<String, dynamic> json) {
     return Votes(
       legendeid: int.parse(json['LEGENDEID']),
-      potoname: json['POTONAME'] as String,
+      potovotant: json['POTOVOTANT'] as String,
       votepoints: int.parse(json['VOTEPOINTS']),
       ipv4: json['IPV4'] as String,
+      potoname: json['POTONAME'] as String,
     );
   }
 } //  Mixage  de Légende et de Vote
@@ -149,3 +152,30 @@ class Legovote {
     required this.ipv4,
   });
 }
+class Logovofo {
+  String fotofilename = "";
+  String fototype = "";
+  String potoname = ""; //   pur qui on vote   I
+  String gamename = "";
+  String legende = "";
+  int legendeid = 0;  // Key
+  String potovotant = "votant";
+  int votepoints = 0;
+
+
+
+  Logovofo({
+    required this.fotofilename,
+    required this.fototype,
+    required this.potoname,
+    required this.gamename,
+    required this.legende,
+    required this.legendeid,
+    required this.potovotant,
+    required this.votepoints,
+
+
+  });
+
+
+} // Legendes
